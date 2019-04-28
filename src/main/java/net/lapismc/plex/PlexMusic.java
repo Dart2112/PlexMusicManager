@@ -4,12 +4,12 @@ import org.apache.commons.io.FileUtils;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.exceptions.CannotReadException;
+import org.jaudiotagger.audio.exceptions.CannotWriteException;
 import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
 import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.TagException;
-import org.jaudiotagger.tag.datatype.Artwork;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,11 +37,20 @@ class PlexMusic {
         try {
             audioFile = AudioFileIO.read(f);
             Tag tag = audioFile.getTag();
+
             artist = tag.getFirst(FieldKey.ARTIST);
+            String title = tag.getFirst(FieldKey.TITLE);
+            String album = tag.getFirst(FieldKey.ALBUM);
+
+            tag = audioFile.createDefaultTag();
             tag.setField(FieldKey.ALBUM_ARTIST, artist);
-            tag.setField(new Artwork());
+            tag.setField(FieldKey.ARTIST, artist);
+            tag.setField(FieldKey.TITLE, title);
+            tag.setField(FieldKey.ALBUM, album);
+
             audioFile.setTag(tag);
-        } catch (CannotReadException | IOException | TagException | ReadOnlyFileException | InvalidAudioFrameException e) {
+            audioFile.commit();
+        } catch (CannotReadException | IOException | TagException | ReadOnlyFileException | InvalidAudioFrameException | CannotWriteException e) {
             e.printStackTrace();
         }
         artist = artist.replaceAll("[\\/:*?\"<>|]", "");
