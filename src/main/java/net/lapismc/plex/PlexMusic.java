@@ -9,6 +9,7 @@ import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.TagException;
+import org.jaudiotagger.tag.datatype.Artwork;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,6 +39,7 @@ class PlexMusic {
             Tag tag = audioFile.getTag();
             artist = tag.getFirst(FieldKey.ARTIST);
             tag.setField(FieldKey.ALBUM_ARTIST, artist);
+            tag.setField(new Artwork());
             audioFile.setTag(tag);
         } catch (CannotReadException | IOException | TagException | ReadOnlyFileException | InvalidAudioFrameException e) {
             e.printStackTrace();
