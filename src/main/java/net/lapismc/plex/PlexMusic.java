@@ -22,9 +22,10 @@ class PlexMusic {
         for (File f : Objects.requireNonNull(folder.listFiles())) {
             if (f.isDirectory() || !f.getName().endsWith(".mp3"))
                 continue;
-            String artist = getArtist(f);
+            File dir = generateDir(f);
             try {
-                FileUtils.moveFileToDirectory(f, generateDir(f), true);
+                System.out.println(f.getName());
+                FileUtils.moveFileToDirectory(f, dir, true);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -62,6 +63,9 @@ class PlexMusic {
             e.printStackTrace();
         }
         album = album.replaceAll("[\\/:*?\"<>|]", "");
+        while (album.endsWith(".")) {
+            album = album.substring(0, album.length() - 1);
+        }
         return !album.equals("") ? album : "Unknown Album";
     }
 
