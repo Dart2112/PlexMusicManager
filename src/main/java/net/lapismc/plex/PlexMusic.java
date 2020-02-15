@@ -22,6 +22,13 @@ class PlexMusic {
         for (File f : Objects.requireNonNull(folder.listFiles())) {
             if (f.isDirectory() || !f.getName().endsWith(".mp3"))
                 continue;
+            //Rename the file to match metadata
+            try {
+                File newName = new File(f.getParentFile().getAbsolutePath() + getTrackFileName(f));
+                f.renameTo(newName);
+            } catch (TagException | ReadOnlyFileException | CannotReadException | InvalidAudioFrameException | IOException e) {
+                e.printStackTrace();
+            }
             File dir = generateDir(f);
             try {
                 System.out.println(f.getName());
@@ -34,6 +41,37 @@ class PlexMusic {
 
     private File generateDir(File f) {
         return new File(folder, getArtist(f) + File.separator + getAlbum(f));
+    }
+
+    private String getTrackFileName(File f) throws TagException, ReadOnlyFileException, CannotReadException, InvalidAudioFrameException, IOException {
+        AudioFile audioFile = AudioFileIO.read(f);
+        Tag tag = audioFile.getTag();
+        String title, artist;
+        title = tag.getFirst(FieldKey.TITLE);
+        artist = tag.getFirst(FieldKey.ARTIST);
+        if (!title.equals("")) {
+            if (!artist.equals("")) {
+                title = title + " - " + artist;
+            }
+            title = title.replaceAll("[\\\\/:*?\"<>|]", "");
+            return cleanupWhitespace(title);
+        } else {
+            return "";
+        }
+    }
+
+    private String cleanupWhitespace(String s) {
+        s = s.replace("_", " ");
+        while (s.startsWith(" ")) {
+            s = s.substring(1);
+        }
+        while (s.endsWith(" ")) {
+            s = s.substring(0, s.length() - 1);
+        }
+        while (s.contains("  ")) {
+            s = s.replace("  ", " ");
+        }
+        return s;
     }
 
     private String getArtist(File f) {
