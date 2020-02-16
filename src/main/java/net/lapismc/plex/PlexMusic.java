@@ -24,7 +24,7 @@ class PlexMusic {
                 continue;
             //Rename the file to match metadata
             try {
-                File newName = new File(f.getParentFile().getAbsolutePath() + getTrackFileName(f));
+                File newName = new File(f.getParentFile().getAbsolutePath() + File.separator + getTrackFileName(f) + ".mp3");
                 f.renameTo(newName);
             } catch (TagException | ReadOnlyFileException | CannotReadException | InvalidAudioFrameException | IOException e) {
                 e.printStackTrace();
