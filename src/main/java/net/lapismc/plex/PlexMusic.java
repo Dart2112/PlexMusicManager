@@ -29,6 +29,10 @@ class PlexMusic {
             } catch (TagException | ReadOnlyFileException | CannotReadException | InvalidAudioFrameException | IOException e) {
                 e.printStackTrace();
             }
+        }
+        for (File f : Objects.requireNonNull(folder.listFiles())) {
+            if (f.isDirectory() || !f.getName().endsWith(".mp3"))
+                continue;
             File dir = generateDir(f);
             try {
                 System.out.println(f.getName());
