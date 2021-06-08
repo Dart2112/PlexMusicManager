@@ -16,22 +16,15 @@ import java.util.Objects;
 
 class PlexMusic {
 
-    private File folder = new File("./Music");
+    private final File folder = new File("./Music");
 
     PlexMusic() {
         for (File f : Objects.requireNonNull(folder.listFiles())) {
-            if (f.isDirectory() || !f.getName().endsWith(".mp3"))
-                continue;
             //Rename the file to match metadata
-            try {
-                File newName = new File(f.getParentFile().getAbsolutePath() + File.separator + getTrackFileName(f) + ".mp3");
-                f.renameTo(newName);
-            } catch (TagException | ReadOnlyFileException | CannotReadException | InvalidAudioFrameException | IOException e) {
-                e.printStackTrace();
-            }
+            renameFile(f);
         }
         for (File f : Objects.requireNonNull(folder.listFiles())) {
-            if (f.isDirectory() || !f.getName().endsWith(".mp3"))
+            if (f.isDirectory())
                 continue;
             File dir = generateDir(f);
             try {
@@ -40,6 +33,30 @@ class PlexMusic {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void renameFile(File f) {
+        if (f.isDirectory()) {
+            for (File file : Objects.requireNonNull(f.listFiles())) {
+                renameFile(file);
+            }
+            if (f.listFiles().length == 0)
+                f.delete();
+        }
+        String fileExtension;
+        if (f.getName().endsWith(".flac"))
+            fileExtension = ".flac";
+        else if (f.getName().endsWith(".mp3")) {
+            fileExtension = ".mp3";
+        } else {
+            return;
+        }
+        try {
+            File newName = new File(folder + File.separator + getTrackFileName(f) + fileExtension);
+            f.renameTo(newName);
+        } catch (TagException | ReadOnlyFileException | CannotReadException | InvalidAudioFrameException | IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -52,7 +69,7 @@ class PlexMusic {
         Tag tag = audioFile.getTag();
         String title, artist;
         title = tag.getFirst(FieldKey.TITLE);
-        artist = tag.getFirst(FieldKey.ARTIST);
+        artist = getArtist(f);
         if (!title.equals("")) {
             if (!artist.equals("")) {
                 title = title + " - " + artist;
@@ -85,7 +102,9 @@ class PlexMusic {
             audioFile = AudioFileIO.read(f);
             Tag tag = audioFile.getTag();
 
-            artist = tag.getFirst(FieldKey.ARTIST);
+            artist = tag.getFirst(FieldKey.ALBUM_ARTIST);
+            if (artist.equals(""))
+                artist = tag.getFirst(FieldKey.ARTIST);
         } catch (CannotReadException | IOException | TagException | ReadOnlyFileException | InvalidAudioFrameException e) {
             e.printStackTrace();
         }
