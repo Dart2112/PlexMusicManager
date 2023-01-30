@@ -12,6 +12,8 @@ import org.jaudiotagger.tag.TagException;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 class PlexMusic {
@@ -55,7 +57,8 @@ class PlexMusic {
         try {
             File newName = new File(folder + File.separator + getTrackFileName(f) + fileExtension);
             f.renameTo(newName);
-        } catch (TagException | ReadOnlyFileException | CannotReadException | InvalidAudioFrameException | IOException e) {
+        } catch (TagException | ReadOnlyFileException | CannotReadException | InvalidAudioFrameException |
+                 IOException e) {
             e.printStackTrace();
         }
     }
@@ -105,10 +108,12 @@ class PlexMusic {
             artist = tag.getFirst(FieldKey.ALBUM_ARTIST);
             if (artist.equals(""))
                 artist = tag.getFirst(FieldKey.ARTIST);
-        } catch (CannotReadException | IOException | TagException | ReadOnlyFileException | InvalidAudioFrameException e) {
+        } catch (CannotReadException | IOException | TagException | ReadOnlyFileException |
+                 InvalidAudioFrameException e) {
             e.printStackTrace();
         }
         artist = artist.replaceAll("[\\/:*?\"<>|]", "");
+        artist = UTF8Format(artist);
         return !artist.equals("") ? artist : "Unknown Artist";
     }
 
@@ -120,14 +125,21 @@ class PlexMusic {
             Tag tag = audioFile.getTag();
 
             album = tag.getFirst(FieldKey.ALBUM);
-        } catch (CannotReadException | IOException | TagException | ReadOnlyFileException | InvalidAudioFrameException e) {
+        } catch (CannotReadException | IOException | TagException | ReadOnlyFileException |
+                 InvalidAudioFrameException e) {
             e.printStackTrace();
         }
         album = album.replaceAll("[\\/:*?\"<>|]", "");
         while (album.endsWith(".")) {
             album = album.substring(0, album.length() - 1);
         }
+        album = UTF8Format(album);
         return !album.equals("") ? album : "Unknown Album";
+    }
+
+    private String UTF8Format(String input) {
+        Charset charset = StandardCharsets.UTF_8;
+        return charset.decode(charset.encode(input)).toString();
     }
 
 }
