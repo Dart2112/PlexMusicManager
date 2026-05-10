@@ -1,5 +1,6 @@
 package net.lapismc.plex;
 
+import org.apache.commons.io.FileExistsException;
 import org.apache.commons.io.FileUtils;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
@@ -27,6 +28,8 @@ class PlexMusic {
         }
         for (File f : Objects.requireNonNull(folder.listFiles())) {
             if (f.isDirectory())
+                continue;
+            if (f.getName().endsWith(".lrc") || f.getName().endsWith(".txt"))
                 continue;
             File dir = generateDir(f);
             try {
@@ -56,6 +59,7 @@ class PlexMusic {
         }
         try {
             File newName = new File(folder + File.separator + getTrackFileName(f) + fileExtension);
+            moveLyrics(f, fileExtension, newName);
             f.renameTo(newName);
         } catch (TagException | ReadOnlyFileException | CannotReadException | InvalidAudioFrameException |
                  IOException e) {
@@ -63,19 +67,41 @@ class PlexMusic {
         }
     }
 
+    private void moveLyrics(File track, String fileExtension, File trackNewName) throws IOException {
+        String[] exts = {".lrc", ".txt"};
+        for (String ext : exts) {
+            //Check if there is a lyrics file with the same name
+            File lrc = new File(track.getParentFile(), track.getName().replace(fileExtension, ext));
+            if (lrc.exists()) {
+                System.out.println(ext + " exists at " + lrc.getPath() + ", moving to " + generateDir(track).getPath());
+                File newLrc = new File(lrc.getParentFile(), trackNewName.getName().replace(fileExtension, ext));
+                lrc.renameTo(newLrc);
+                if (lrc.getParentFile().getPath().equals(generateDir(track).getPath()))
+                    continue;
+                try {
+                    FileUtils.moveFileToDirectory(newLrc, generateDir(track), true);
+                } catch (FileExistsException ignored) {
+                    //The file didn't need to be moved or already exists, we can ignore this error
+                }
+            }
+        }
+    }
+
     private File generateDir(File f) {
-        return new File(folder, getArtist(f) + File.separator + getAlbum(f));
+        return new File(folder, getAlbumArtist(f) + File.separator + getAlbum(f));
     }
 
     private String getTrackFileName(File f) throws TagException, ReadOnlyFileException, CannotReadException, InvalidAudioFrameException, IOException {
         AudioFile audioFile = AudioFileIO.read(f);
         Tag tag = audioFile.getTag();
-        String title, artist;
+        String title, trackNoString;
         title = tag.getFirst(FieldKey.TITLE);
-        artist = getArtist(f);
-        if (!title.equals("")) {
-            if (!artist.equals("")) {
-                title = title + " - " + artist;
+        trackNoString = tag.getFirst(FieldKey.TRACK);
+        if (!title.isEmpty()) {
+            if (!trackNoString.isEmpty()) {
+                int trackNo = Integer.parseInt(trackNoString);
+                String paddedTrackNo = String.format("%02d", trackNo);
+                title = paddedTrackNo + ". " + title;
             }
             title = title.replaceAll("[\\\\/:*?\"<>|]", "");
             return cleanupWhitespace(title);
@@ -98,7 +124,7 @@ class PlexMusic {
         return s;
     }
 
-    private String getArtist(File f) {
+    private String getAlbumArtist(File f) {
         AudioFile audioFile;
         String artist = "";
         try {
@@ -108,6 +134,25 @@ class PlexMusic {
             artist = tag.getFirst(FieldKey.ALBUM_ARTIST);
             if (artist.equals(""))
                 artist = tag.getFirst(FieldKey.ARTIST);
+        } catch (CannotReadException | IOException | TagException | ReadOnlyFileException |
+                 InvalidAudioFrameException e) {
+            e.printStackTrace();
+        }
+        artist = artist.replaceAll("[\\/:*?\"<>|]", "");
+        artist = UTF8Format(artist);
+        return !artist.equals("") ? artist : "Unknown Artist";
+    }
+
+    private String getTrackArtist(File f) {
+        AudioFile audioFile;
+        String artist = "";
+        try {
+            audioFile = AudioFileIO.read(f);
+            Tag tag = audioFile.getTag();
+
+            artist = tag.getFirst(FieldKey.ARTIST);
+            if (artist.equals(""))
+                artist = tag.getFirst(FieldKey.ALBUM_ARTIST);
         } catch (CannotReadException | IOException | TagException | ReadOnlyFileException |
                  InvalidAudioFrameException e) {
             e.printStackTrace();
@@ -130,7 +175,7 @@ class PlexMusic {
             e.printStackTrace();
         }
         album = album.replaceAll("[\\/:*?\"<>|]", "");
-        while (album.endsWith(".")) {
+        while (album.endsWith(".") || album.endsWith(" ")) {
             album = album.substring(0, album.length() - 1);
         }
         album = UTF8Format(album);

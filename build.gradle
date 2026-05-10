@@ -1,0 +1,29 @@
+plugins {
+    id "java"
+    id "com.gradleup.shadow" version "9.0.0-rc1"
+}
+
+group = "net.lapismc"
+version = "1.0.0"
+
+repositories {
+    mavenCentral()
+    // jaudiotagger might need a specific repo if not in mavenCentral
+    maven { url = uri("https://jitpack.io") }
+}
+
+shadowJar {
+    archiveFileName.set("PlexMusicManager.jar")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+dependencies {
+    implementation("com.github.RouHim:jaudiotagger:2.0.19")
+    implementation("commons-io:commons-io:2.14.0")
+}
+
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = "net.lapismc.plex.Main"
+    }
+}
