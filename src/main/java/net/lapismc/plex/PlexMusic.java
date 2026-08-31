@@ -94,14 +94,22 @@ class PlexMusic {
     private String getTrackFileName(File f) throws TagException, ReadOnlyFileException, CannotReadException, InvalidAudioFrameException, IOException {
         AudioFile audioFile = AudioFileIO.read(f);
         Tag tag = audioFile.getTag();
-        String title, trackNoString;
+        String title, trackNoString, totalDiscs, discNumber;
         title = tag.getFirst(FieldKey.TITLE);
         trackNoString = tag.getFirst(FieldKey.TRACK);
+        totalDiscs = tag.getFirst(FieldKey.DISC_TOTAL);
+        discNumber = tag.getFirst(FieldKey.DISC_NO);
         if (!title.isEmpty()) {
             if (!trackNoString.isEmpty()) {
                 int trackNo = Integer.parseInt(trackNoString);
                 String paddedTrackNo = String.format("%02d", trackNo);
                 title = paddedTrackNo + ". " + title;
+            }
+            //If there is more than one disc
+            if (!totalDiscs.isEmpty() && !totalDiscs.equals("1")) {
+                //Get the disc number for this track and append it to the track no
+                int discNo = Integer.parseInt(discNumber);
+                title = discNo + "-" + title;
             }
             title = title.replaceAll("[\\\\/:*?\"<>|]", "");
             return cleanupWhitespace(title);
